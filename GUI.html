@@ -1,0 +1,78 @@
+
+<HTML>
+<HEAD>
+<HTA:APPLICATION>
+
+<TITLE>HTA Buttons</TITLE>
+<SCRIPT language="JavaScript">
+window.resizeTo(500,350);
+
+function closeHTA(reply){
+   var fso = new ActiveXObject("Scripting.FileSystemObject");
+   fso.GetStandardStream(1).WriteLine(reply);
+   window.close();
+}
+
+function showBackupInputs(){
+    var container = document.getElementById("container");
+    container.style.display="none";
+    // container.innerHTML = `
+    //     <label for="source-drive">Source Drive letter:</label>
+    //     <input type="text" id="source-drive" name="source-drive"><br><br>
+    //     <label for="customer-name">Customer name:</label>
+    //     <input type="text" id="customer-name" name="customer-name"><br><br>
+    //     <button onclick="backup();">Back up</button>
+    // `;
+    document.getElementById('backup_func').style.display="block";
+}
+
+function backup(){
+    var sourceDrive = document.getElementById("source-drive").value;
+    var customerName = document.getElementById("customer-name").value;
+    // TODO: Add backup logic here
+    closeHTA("Backup completed for " + customerName);
+}
+</SCRIPT>
+<STYLE>
+    body{
+        margin: 0;
+        left: 0;
+    }
+    #container{
+
+        display: inline-block;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 10px;
+        vertical-align: top;
+        width: 100%;
+        text-align:center;
+    }
+    button{
+        margin:5px;
+        width:30%;
+        height:70px;
+        overflow:visible;
+        font-size:30px;
+    }
+    #backup_func{
+        display: none;
+    }
+</STYLE>
+</HEAD>
+<BODY>
+    <div id="container">
+        <button onclick="showBackupInputs();">Run Back up</button>
+        <button onclick="closeHTA(2);">Windows Optimization</button>
+        <button onclick="closeHTA(3);">System Corruption Scan</button>
+
+    </div>
+    <div id="backup_func">
+        <label for="source-drive">Source Drive letter:</label>
+        <input type="text" id="source-drive" name="source-drive"><br><br>
+        <label for="customer-name">Customer name:</label>
+        <input type="text" id="customer-name" name="customer-name"><br><br>
+        <button onclick="backup();">Back up</button>
+    </div>
+</BODY>
+</HTML>
