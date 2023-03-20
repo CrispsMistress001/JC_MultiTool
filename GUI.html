@@ -1,64 +1,69 @@
 
 <HTML>
 <HEAD>
-<HTA:APPLICATION>
+    <HTA:APPLICATION>
 
-<TITLE>HTA Buttons</TITLE>
-<SCRIPT language="JavaScript">
-window.resizeTo(500,350);
+    <TITLE>HTA Buttons</TITLE>
+    <SCRIPT language="JavaScript">
+    window.resizeTo(500,350);
 
-function closeHTA(reply){
-   var fso = new ActiveXObject("Scripting.FileSystemObject");
-   fso.GetStandardStream(1).WriteLine(reply);
-   window.close();
-}
-
-function showBackupInputs(){
-    var container = document.getElementById("container");
-    container.style.display="none";
-    // container.innerHTML = `
-    //     <label for="source-drive">Source Drive letter:</label>
-    //     <input type="text" id="source-drive" name="source-drive"><br><br>
-    //     <label for="customer-name">Customer name:</label>
-    //     <input type="text" id="customer-name" name="customer-name"><br><br>
-    //     <button onclick="backup();">Back up</button>
-    // `;
-    document.getElementById('backup_func').style.display="block";
-}
-
-function backup(){
-    var sourceDrive = document.getElementById("source-drive").value;
-    var customerName = document.getElementById("customer-name").value;
-    // TODO: Add backup logic here
-    closeHTA("Backup completed for " + customerName);
-}
-</SCRIPT>
-<STYLE>
-    body{
-        margin: 0;
-        left: 0;
+    function closeHTA(reply){
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        fso.GetStandardStream(1).WriteLine(reply);
+        window.close();
     }
-    #container{
 
-        display: inline-block;
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin: 10px;
-        vertical-align: top;
-        width: 100%;
-        text-align:center;
+    function showBackupInputs(){
+        var container = document.getElementById("container");
+        container.style.display="none";
+        document.getElementById('backup_func').style.display="block";
     }
-    button{
-        margin:5px;
-        width:30%;
-        height:70px;
-        overflow:visible;
-        font-size:30px;
+
+    function backup(){
+        var sourceDrive = document.getElementById("source_drive").options[source_drive.selectedIndex].value;
+        var destinationDrive = document.getElementById("destination_drive").options[destination_drive.selectedIndex].value;
+        var customerName = document.getElementById("customer-name").value;
+        // TODO: Add backup logic here
+        closeHTA("1 " + sourceDrive +" "+ customerName + " " + destinationDrive);
     }
-    #backup_func{
-        display: none;
-    }
-</STYLE>
+
+    </SCRIPT>
+    <STYLE>
+        body{
+            margin: 0;
+            left: 0;
+        }
+        #container{
+
+            display: inline-block;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            vertical-align: top;
+            width: 100%;
+            text-align:center;
+        }
+        button{
+            margin:5px;
+            width:30%;
+            height:70px;
+            overflow:visible;
+            font-size:30px;
+        }
+        #backup_func{
+            display: none;
+            text-align: center;
+        }
+        select {
+            font-size: xx-large;
+        }
+        label{
+            font-size: xx-large;
+            vertical-align: middle;
+            
+        }
+
+    </STYLE>
 </HEAD>
 <BODY>
     <div id="container">
@@ -68,8 +73,60 @@ function backup(){
 
     </div>
     <div id="backup_func">
-        <label for="source-drive">Source Drive letter:</label>
-        <input type="text" id="source-drive" name="source-drive"><br><br>
+        <label for="source_drive">Source Drive letter:</label>
+        <select id="source_drive">
+            <option value="C">C:</option>
+            <option value="D">D:</option>
+            <option value="E">E:</option>
+            <option value="F">F:</option>
+            <option value="G">G:</option>
+            <option value="H">H:</option>
+            <option value="I">I:</option>
+            <option value="J">J:</option>
+            <option value="K">K:</option>
+            <option value="L">L:</option>
+            <option value="M">M:</option>
+            <option value="N">N:</option>
+            <option value="O">O:</option>
+            <option value="P">P:</option>
+            <option value="Q">Q:</option>
+            <option value="R">R:</option>
+            <option value="S">S:</option>
+            <option value="T">T:</option>
+            <option value="U">U:</option>
+            <option value="V">V:</option>
+            <option value="W">W:</option>
+            <option value="X">X:</option>
+            <option value="Y">Y:</option>
+            <option value="Z">Z:</option>
+        </select> <br>
+        <label for="destination_drive">Destination Drive:</label>
+        <select id="destination_drive">
+            <option value="C">C:</option>
+            <option value="D">D:</option>
+            <option value="E">E:</option>
+            <option value="F">F:</option>
+            <option value="G">G:</option>
+            <option value="H">H:</option>
+            <option value="I">I:</option>
+            <option value="J">J:</option>
+            <option value="K">K:</option>
+            <option value="L">L:</option>
+            <option value="M">M:</option>
+            <option value="N">N:</option>
+            <option value="O">O:</option>
+            <option value="P">P:</option>
+            <option value="Q">Q:</option>
+            <option value="R">R:</option>
+            <option value="S">S:</option>
+            <option value="T">T:</option>
+            <option value="U">U:</option>
+            <option value="V">V:</option>
+            <option value="W">W:</option>
+            <option value="X">X:</option>
+            <option value="Y">Y:</option>
+            <option value="Z">Z:</option>
+        </select><br>
         <label for="customer-name">Customer name:</label>
         <input type="text" id="customer-name" name="customer-name"><br><br>
         <button onclick="backup();">Back up</button>

@@ -23,13 +23,13 @@ echo End of HTA window, reply: "%HTAreply%"
 @REM pause
 
 
-for /f "tokens=1-3 delims= " %%a in ("%HTAreply%") do (
+for /f "tokens=1-4 delims= " %%a in ("%HTAreply%") do (
     if "%%a"=="1" (
-        call :run_backup "%%b" "%%c"
+        call :run_backup %%b %%c %%d
     ) else if "%%a"=="2" (
-        call :function_b "%%b" "%%c"
+        call :Optimization %%b %%c %%d
     ) else if "%%a"=="3" (
-        call :function_c "%%b" "%%c"
+        call :function_c %%b %%c %%d
     ) else (
         goto :loop_end
     )
@@ -44,21 +44,25 @@ goto :eof
 
 set "sourceDrive=%~1"
 set "customerName=%~2"
+set "Destination=%~3"
 
-echo Running backup for %customerName% from source drive letter %sourceDrive%...
 
-set "destinationRoot=D:\Backup"
+echo Running backup for %customerName% from source drive letter %sourceDrive% onto %Destination% drive...
+pause
+set "destinationRoot=%Destination%:\Backup"
 set backupDate=%date:~0,2%_%date:~3,2%_%date:~6,4%
 set destinationPath=%destinationRoot%\%customerName% %backupDate%
 if not exist "%destinationPath%" (
     @REM powershell -Command "New-Item -ItemType Directory -Path '%destinationPath%'"
     mkdir "%destinationPath%"
 )
+
 @REM @echo on
 
 start "" "%destinationPath%"
 :: unfortunately have to open file explorer due to windows bug or some sort which does not actually make a file
 :: for use until you open it up in explorer orrrr the robocopy does not see it
+
 timeout /t 1 >nul
 
 
@@ -74,17 +78,15 @@ if not exist "%destinationPath%\Backup.log" (
 )
 
 set "options=/E /ZB /COPY:DAT /DCOPY:T /MT:8 /R:3 /W:10 /LOG:%log% /NP /TEE"
-@REM set "options=/e /DCOPY:DAT /R:10 /W:0 /NP /TEE"
-
-@REM echo %options%
-@REM echo %sourcePath% "%destinationPath%" %options%
 
 robocopy %sourcePath% "%destinationPath%" %options%
 goto :eof
 
+:: BELOW IS FOR SYSTEM OPTIMIZATION
+:Optimization
 
-:function_b
-echo Function B was called
+
+
 goto :eof
 
 :function_c
@@ -93,66 +95,80 @@ goto :eof
 
 -->
 
+
 <HTML>
 <HEAD>
-<HTA:APPLICATION>
+    <HTA:APPLICATION>
 
-<TITLE>HTA Buttons</TITLE>
-<SCRIPT language="JavaScript">
-window.resizeTo(500,350);
+    <TITLE>HTA Buttons</TITLE>
+    <SCRIPT language="JavaScript">
+    window.resizeTo(500,350);
 
-function closeHTA(reply){
-   var fso = new ActiveXObject("Scripting.FileSystemObject");
-   fso.GetStandardStream(1).WriteLine(reply);
-   window.close();
-}
-
-function showBackupInputs(){
-    var container = document.getElementById("container");
-    container.style.display="none";
-    // container.innerHTML = `
-    //     <label for="source-drive">Source Drive letter:</label>
-    //     <input type="text" id="source-drive" name="source-drive"><br><br>
-    //     <label for="customer-name">Customer name:</label>
-    //     <input type="text" id="customer-name" name="customer-name"><br><br>
-    //     <button onclick="backup();">Back up</button>
-    // `;
-    document.getElementById('backup_func').style.display="block";
-}
-
-function backup(){
-    var sourceDrive = document.getElementById("source-drive").value;
-    var customerName = document.getElementById("customer-name").value;
-    // TODO: Add backup logic here
-    closeHTA("1 " + sourceDrive +" "+ customerName);
-}
-</SCRIPT>
-<STYLE>
-    body{
-        margin: 0;
-        left: 0;
+    function closeHTA(reply){
+        var fso = new ActiveXObject("Scripting.FileSystemObject");
+        fso.GetStandardStream(1).WriteLine(reply);
+        window.close();
     }
-    #container{
 
-        display: inline-block;
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin: 10px;
-        vertical-align: top;
-        width: 100%;
-        text-align:center;
+    function showBackupInputs(){
+        var container = document.getElementById("container");
+        container.style.display="none";
+        document.getElementById('backup_func').style.display="block";
     }
-    button{
-        margin:5px;
-        width:30%;
-        height:70px;
-        overflow:visible;
-        font-size:30px;
+
+    function backup(){
+        var sourceDrive = document.getElementById("source_drive").options[source_drive.selectedIndex].value;
+        var destinationDrive = document.getElementById("destination_drive").options[destination_drive.selectedIndex].value;
+        var customerName = document.getElementById("customer-name").value;
+        // TODO: Add backup logic here
+        closeHTA("1 " + sourceDrive +" "+ customerName + " " + destinationDrive);
     }
-    #backup_func{
-        display: none;
-    }
-</STYLE>
+
+    </SCRIPT>
+    <STYLE>
+        body{
+            margin: 0;
+            left: 0;
+        }
+        #container{
+
+            display: inline-block;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            vertical-align: top;
+            width: 100%;
+            text-align:center;
+        }
+        button{
+            margin:5px;
+            width:30%;
+            height:70px;
+            overflow:visible;
+            font-size:30px;
+        }
+        #backup_func{
+            display: none;
+            text-align: center;
+            border: 1px solid #ccc;
+
+        }
+        select {
+            font-size: 130%;
+        }
+        label{
+            font-size: 130%;
+            vertical-align: middle;
+            height:20%;
+
+        }
+        input{
+            font-size: 130%;
+            height:20%;
+
+        }
+
+    </STYLE>
 </HEAD>
 <BODY>
     <div id="container">
@@ -162,8 +178,60 @@ function backup(){
 
     </div>
     <div id="backup_func">
-        <label for="source-drive">Source Drive letter:</label>
-        <input type="text" id="source-drive" name="source-drive"><br><br>
+        <label for="source_drive">Source Drive letter:</label>
+        <select id="source_drive">
+            <option value="C">C:</option>
+            <option value="D">D:</option>
+            <option value="E">E:</option>
+            <option value="F">F:</option>
+            <option value="G">G:</option>
+            <option value="H">H:</option>
+            <option value="I">I:</option>
+            <option value="J">J:</option>
+            <option value="K">K:</option>
+            <option value="L">L:</option>
+            <option value="M">M:</option>
+            <option value="N">N:</option>
+            <option value="O">O:</option>
+            <option value="P">P:</option>
+            <option value="Q">Q:</option>
+            <option value="R">R:</option>
+            <option value="S">S:</option>
+            <option value="T">T:</option>
+            <option value="U">U:</option>
+            <option value="V">V:</option>
+            <option value="W">W:</option>
+            <option value="X">X:</option>
+            <option value="Y">Y:</option>
+            <option value="Z">Z:</option>
+        </select> <br>
+        <label for="destination_drive">Destination Drive:</label>
+        <select id="destination_drive">
+            <option value="C">C:</option>
+            <option value="D">D:</option>
+            <option value="E">E:</option>
+            <option value="F">F:</option>
+            <option value="G">G:</option>
+            <option value="H">H:</option>
+            <option value="I">I:</option>
+            <option value="J">J:</option>
+            <option value="K">K:</option>
+            <option value="L">L:</option>
+            <option value="M">M:</option>
+            <option value="N">N:</option>
+            <option value="O">O:</option>
+            <option value="P">P:</option>
+            <option value="Q">Q:</option>
+            <option value="R">R:</option>
+            <option value="S">S:</option>
+            <option value="T">T:</option>
+            <option value="U">U:</option>
+            <option value="V">V:</option>
+            <option value="W">W:</option>
+            <option value="X">X:</option>
+            <option value="Y">Y:</option>
+            <option value="Z">Z:</option>
+        </select><br>
         <label for="customer-name">Customer name:</label>
         <input type="text" id="customer-name" name="customer-name"><br><br>
         <button onclick="backup();">Back up</button>
