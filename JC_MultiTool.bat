@@ -30,6 +30,10 @@ for /f "tokens=1-4 delims= " %%a in ("%HTAreply%") do (
         call :Optimization
     ) else if "%%a"=="3" (
         call :Corruption_Scan %%b
+    ) else if "%%a"=="4" (
+        call :Install_Apps
+    ) else if "%%a"=="5" (
+        call :DesktopSetup
     ) else (
         goto :loop_end
     )
@@ -56,9 +60,11 @@ if not exist "%destinationPath%" (
     mkdir "%destinationPath%"
 )
 
+cd "%destinationPath%
+
 @REM @echo on
 
-start "" "%destinationPath%"
+@REM start "" "%destinationPath%"
 :: unfortunately have to open file explorer due to windows bug or some sort which does not actually make a file
 :: for use until you open it up in explorer orrrr the robocopy does not see it
 
@@ -76,7 +82,7 @@ if not exist "%destinationPath%\Backup.log" (
   echo File already exists.
 )
 
-set "options=/E /ZB /COPY:DAT /DCOPY:T /MT:8 /R:3 /W:10 /LOG:%log% /NP /TEE"
+set "options=/E /PURGE /r:1 /w:1 /TEE /LOG:result.log /XJ /XJD /XJF /ETA"
 
 robocopy %sourcePath% "%destinationPath%" %options%
 goto :eof
@@ -204,6 +210,80 @@ if /i "%drive%" == "C" (
 :end
 echo finished.
 pause
+goto :eof
+
+:DesktopSetup
+
+call :Install_Apps
+
+echo Unpinning all items from taskbar...
+
+@echo off
+setlocal EnableDelayedExpansion
+
+set "apps_to_keep=Microsoft Store,File Explorer,Google Chrome"
+
+for /f "skip=1 tokens=1,2*" %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v pinned /s ^| findstr /i /c:"REG_BINARY"') do (
+    set "item=%%c"
+    set "item=!item:~24!"
+    set "item=!item:~0,-12!"
+    set "item=!item::=\\!"
+    set "item=!item:\Demoshortcuts=!"
+    set "item=!item:\=\\!"
+    echo Checking "!item!"...
+    set "keep_item="
+    for %%d in (%apps_to_keep%) do (
+        if /i "!item!"=="%%d" set "keep_item=1"
+    )
+    if not defined keep_item (
+        echo Unpinning "!item!"...
+        powershell -command "$objShell = New-Object -ComObject Shell.Application;$objFolder = $objShell.Namespace('shell:::{4234d49b-0245-4df3-b780-3893943456e1}');$objFolderItem = $objFolder.ParseName('!item!');$objFolderItemVerbs = $objFolderItem.Verbs();foreach ($objVerb in $objFolderItemVerbs) { if (($objVerb.Name -like '*from taskbar') -or ($objVerb.Name -like '*Taskbar')) { $objVerb.DoIt() } }"
+    )
+)
+
+
+setlocal
+REM Get the path to the Google Chrome shortcut on the desktop
+set "shortcut=%USERPROFILE%\Desktop\Google Chrome.lnk"
+
+REM Check if the shortcut exists
+if not exist "%shortcut%" (
+    echo The Google Chrome shortcut does not exist on the desktop.
+)
+
+REM Get the path to the taskbar folder
+set "taskbar=%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"
+
+REM Copy the shortcut to the taskbar folder
+copy "%shortcut%" "%taskbar%"
+
+REM Rename the copied shortcut to remove the " - Shortcut" suffix
+ren "%taskbar%\Google Chrome.lnk" "Google Chrome"
+
+echo The Google Chrome shortcut has been pinned to the taskbar.
+
+start ms-settings:windowsupdate
+
+goto :eof
+
+:Install_Apps
+
+setlocal
+@REM CHECKS FOR WINGET AND IF IT IS NOT INSTALLED THEN INSTALLS IT 
+where winget >nul 2>nul
+if %errorlevel%==0 (
+    echo winget is already installed.
+) else (
+    echo Installing winget...
+    powershell.exe -Command "Start-Process -FilePath 'https://github.com/microsoft/winget-cli/releases/download/v1.0.12653/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' -ArgumentList '/silent' -Verb 'runAs'"
+)
+
+winget install Google.Chrome --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
+winget install TheDocumentFoundation.LibreOffice --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
+winget install VideoLAN.VLC --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
+winget install Adobe.Acrobat.Reader.64-bit --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
+
+
 goto :eof
 
 
