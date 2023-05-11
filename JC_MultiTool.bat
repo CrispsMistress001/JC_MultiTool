@@ -40,7 +40,6 @@ for /f "tokens=1-4 delims= " %%a in ("%HTAreply%") do (
 )
 :loop_end
 
-pause
 goto :eof
 
 
@@ -216,51 +215,28 @@ goto :eof
 
 call :Install_Apps
 
-echo Unpinning all items from taskbar...
-
-@echo off
 setlocal EnableDelayedExpansion
 
 set "apps_to_keep=Microsoft Store,File Explorer,Google Chrome"
+set "desktop_dir=C:\Users\Default\Desktop"
+set "taskbar_dir=%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"
 
-for /f "skip=1 tokens=1,2*" %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v pinned /s ^| findstr /i /c:"REG_BINARY"') do (
-    set "item=%%c"
-    set "item=!item:~24!"
-    set "item=!item:~0,-12!"
-    set "item=!item::=\\!"
-    set "item=!item:\Demoshortcuts=!"
+:: Unpin everything except apps to keep
+for /f "tokens=1,* delims=|" %%a in ('powershell -command "Get-ChildItem -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband' | ForEach-Object { Get-ItemProperty -Path $_.pspath } | Select-Object -ExpandProperty pinned | Where-Object { $_.IndexOf('shell:AppsFolder') -lt 0 } | Sort-Object -Unique" ^| findstr /v /i "%apps_to_keep%"') do (
+    set "item=%%b"
+    set "item=!item:~0,-4!"
     set "item=!item:\=\\!"
-    echo Checking "!item!"...
-    set "keep_item="
-    for %%d in (%apps_to_keep%) do (
-        if /i "!item!"=="%%d" set "keep_item=1"
-    )
-    if not defined keep_item (
-        echo Unpinning "!item!"...
-        powershell -command "$objShell = New-Object -ComObject Shell.Application;$objFolder = $objShell.Namespace('shell:::{4234d49b-0245-4df3-b780-3893943456e1}');$objFolderItem = $objFolder.ParseName('!item!');$objFolderItemVerbs = $objFolderItem.Verbs();foreach ($objVerb in $objFolderItemVerbs) { if (($objVerb.Name -like '*from taskbar') -or ($objVerb.Name -like '*Taskbar')) { $objVerb.DoIt() } }"
-    )
+    echo Unpinning "!item!"...
+    powershell -command "$objShell = New-Object -ComObject Shell.Application;$objFolder = $objShell.Namespace('shell:::{4234d49b-0245-4df3-b780-3893943456e1}');$objFolderItem = $objFolder.ParseName('!item!');$objFolderItemVerbs = $objFolderItem.Verbs();foreach ($objVerb in $objFolderItemVerbs) { if (($objVerb.Name -like '*from taskbar') -or ($objVerb.Name -like '*Taskbar')) { $objVerb.DoIt() } }"
 )
 
-
-setlocal
-REM Get the path to the Google Chrome shortcut on the desktop
-set "shortcut=%USERPROFILE%\Desktop\Google Chrome.lnk"
-
-REM Check if the shortcut exists
-if not exist "%shortcut%" (
-    echo The Google Chrome shortcut does not exist on the desktop.
+:: Pin shortcuts from Default Desktop to Taskbar
+for %%F in ("%desktop_dir%\*.lnk") do (
+    set "shortcut_path=%%~fF"
+    set "shortcut_name=%%~nF"
+    echo Pinning "!shortcut_name!"...
+    powershell -command "$objShell = New-Object -ComObject Shell.Application;$objFolder = $objShell.Namespace('!taskbar_dir!');$objFolderItem = $objFolder.ParseName('!shortcut_name!.lnk');$objVerb = $objFolderItem.Verbs() | ? {$_.Name -eq 'Pin to Taskbar'};$objVerb.DoIt()"
 )
-
-REM Get the path to the taskbar folder
-set "taskbar=%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"
-
-REM Copy the shortcut to the taskbar folder
-copy "%shortcut%" "%taskbar%"
-
-REM Rename the copied shortcut to remove the " - Shortcut" suffix
-ren "%taskbar%\Google Chrome.lnk" "Google Chrome"
-
-echo The Google Chrome shortcut has been pinned to the taskbar.
 
 start ms-settings:windowsupdate
 
@@ -268,20 +244,24 @@ goto :eof
 
 :Install_Apps
 
-setlocal
-@REM CHECKS FOR WINGET AND IF IT IS NOT INSTALLED THEN INSTALLS IT 
-where winget >nul 2>nul
-if %errorlevel%==0 (
-    echo winget is already installed.
-) else (
-    echo Installing winget...
-    powershell.exe -Command "Start-Process -FilePath 'https://github.com/microsoft/winget-cli/releases/download/v1.0.12653/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' -ArgumentList '/silent' -Verb 'runAs'"
+@REM :: Check if Winget is installed
+
+where winget.exe > nul 2>&1
+if %errorlevel% EQU 0 (
+    echo Winget is already installed.
+    goto end
 )
 
-winget install Google.Chrome --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
-winget install TheDocumentFoundation.LibreOffice --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
-winget install VideoLAN.VLC --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
-winget install Adobe.Acrobat.Reader.64-bit --silent --override "/desktopicon=C:\Users\<user>\Desktop\<app_name>.lnk"
+@REM :: Install Winget from Microsoft Store
+echo Installing Winget...
+powershell.exe -ExecutionPolicy Bypass -Command "& {$surl='https://aka.ms/winget-cli';$dfile='winget-cli.appxbundle';Invoke-WebRequest -UseBasicParsing -Uri $surl -OutFile $dfile;Add-AppxPackage $dfile}"
+
+echo Done.
+
+winget install Google.Chrome --silent --accept-package-agreements --accept-source-agreements --force
+winget install TheDocumentFoundation.LibreOffice --silent --accept-package-agreements --accept-source-agreements --force
+winget install VideoLAN.VLC --silent --accept-package-agreements --accept-source-agreements --force
+winget install Adobe.Acrobat.Reader.64-bit --silent --accept-package-agreements --accept-source-agreements --force
 
 
 goto :eof
